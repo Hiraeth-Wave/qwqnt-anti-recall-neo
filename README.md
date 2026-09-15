@@ -1,6 +1,6 @@
 # qwqnt-anti-recall
 
-基于 QwQNT 框架的 **QQNT 简易防撤回**。  
+基于 QwQNT 框架的 **QQNT 简易防撤回**。
 本插件迁移自 [LiteLoaderQQNT-Anti-Recall](https://github.com/xh321/LiteLoaderQQNT-Anti-Recall)
 
 ## 功能简介
@@ -22,15 +22,15 @@
 
 要正常使用本插件，你**必须**先安装并启用以下前置插件：
 
-- [`qwqnt-ipc-interceptor`](https://github.com/qwqnt-community/qwqnt-ipc-interceptor)  
+- [`qwqnt-ipc-interceptor`](https://github.com/qwqnt-community/qwqnt-ipc-interceptor)
 - [`qwqnt-hako`](https://github.com/qwqnt-community/qwqnt-hako)
 
 ## 安装与使用
 
 > 本节假设你已经正确安装了 QwQNT 框架，并了解如何安装 QwQNT 插件。
 
-1. 下载构建好的 `qwqnt-anti-recall.zip` 插件包。  
-2. 按 QwQNT 要求，将压缩包解压并放入插件目录。  
+1. 下载构建好的 `qwqnt-anti-recall.zip` 插件包。
+2. 按 QwQNT 要求，将压缩包解压并放入插件目录。
 3. 确保以下插件在 QwQNT 中已启用：
    - `qwqnt-ipc-interceptor`
    - `qwqnt-hako`
@@ -61,6 +61,8 @@
   - 撤回高亮主题色（会同时影响阴影和「已撤回」提示文本颜色）
   - 是否显示阴影效果
   - 是否在消息下方显示「已撤回」提示条
+- **Rkey 服务器地址**
+  - 插件自带服务器可能挂了，可通过自定义服务器地址来解决
 
 ## 从源码构建
 
@@ -68,8 +70,8 @@
 
 ### 环境要求
 
-- Node.js（建议 20+）
-- [pnpm](https://pnpm.io/)（本项目的 `packageManager` 已指定为 `pnpm@10.x`）
+- [Node.js](https://nodejs.org/zh-cn/) 20+
+- [pnpm](https://pnpm.io)
 
 ### 安装依赖
 
@@ -86,5 +88,5 @@ pnpm build
 
 ## 开源协议
 
-本项目使用 **MIT License** 开源。  
+本项目使用 **MIT License** 开源。
 你可以在遵守 MIT 协议的前提下自由地使用、修改和分发本项目的代码。
