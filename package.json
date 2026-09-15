@@ -1,16 +1,17 @@
 {
   "$schema": "https://raw.githubusercontent.com/qwqnt-community/types/main/plugin.schema.json",
-  "name": "qwqnt-anti-recall",
+  "name": "qwqnt-anti-recall-neo",
   "version": "0.4.0",
-  "description": "防止 QQNT 撤回消息的 QwQNT 插件（基于 LiteLoaderQQNT-Anti-Recall 迁移）",
+  "description": "QwQNT 简易防撤回 - 个人自用改版",
+  "author": "Hiraeth",
+  "license": "MIT",
+  "homepage": "https://github.com/Hiraeth-Wave/qwqnt-anti-recall-neo",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "lint": "oxlint --fix --tsconfig ./tsconfig.json --type-aware src/**/*.js,src/**/*.ts",
     "build": "vite build --mode main && node scripts/copy-runtime-deps.mjs && node scripts/rebuild-leveldown.mjs && vite build --mode preload && vite build --mode renderer"
   },
-  "author": "accmo",
-  "license": "MIT",
   "dependencies": {
     "level": "^7.0.1"
   },
@@ -29,7 +30,7 @@
   },
   "packageManager": "pnpm@12.4.1",
   "qwqnt": {
-    "name": "防撤回（Anti-Recall）",
+    "name": "防撤回",
     "inject": {
       "main": "./main/index.cjs",
       "preload": "./preload/index.cjs",
