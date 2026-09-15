@@ -16,7 +16,7 @@
 
 我们假设你已经安装了 QwQNT。
 
-1. 下载 Release 构建好的 `qwqnt-anti-recall.zip` 插件包。
+1. 下载 Release 构建好的 `qwqnt-anti-recall-neo.zip` 插件包。
 2. 按 QwQNT 要求将压缩包解压并放入插件目录。
 3. 确保以下插件在 QwQNT 中已安装并已启用：
    - [`qwqnt-ipc-interceptor`](https://github.com/qwqnt-community/qwqnt-ipc-interceptor)
