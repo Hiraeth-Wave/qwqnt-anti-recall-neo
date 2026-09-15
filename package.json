@@ -1,8 +1,8 @@
 {
   "$schema": "https://raw.githubusercontent.com/qwqnt-community/types/main/plugin.schema.json",
   "name": "qwqnt-anti-recall-neo",
-  "version": "0.4.0",
-  "description": "QwQNT 防撤回插件 - 个人自用改版",
+  "version": "1.0.0",
+  "description": "QwQNT 防撤回插件 - Hiraeth 自用改版",
   "author": "Hiraeth",
   "license": "MIT",
   "homepage": "https://github.com/Hiraeth-Wave/qwqnt-anti-recall-neo",
