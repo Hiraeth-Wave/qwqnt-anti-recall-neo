@@ -9,7 +9,6 @@ type EffectiveStorage = 'json' | 'level';
 
 interface AntiRecallConfig {
   mainColor: string;
-  saveDb: boolean;
   dbStorageType: DbStorageType;
   saveImagesToDataDir: boolean;
   enableShadow: boolean;
@@ -249,7 +248,6 @@ const imageDownloader = new ImageDownloader();
 
 const DEFAULT_CONFIG: AntiRecallConfig = {
   mainColor: '#ff6d6d',
-  saveDb: false,
   dbStorageType: 'ldb',
   saveImagesToDataDir: false,
   enableShadow: true,
@@ -331,8 +329,6 @@ function flushJsonDb(): void {
 }
 
 async function ensureStorageReady(): Promise<void> {
-  if (!config.saveDb) return;
-
   if (config.dbStorageType === 'ldb') {
     const ok = await tryOpenLevelDb();
     if (!ok) {
@@ -349,7 +345,6 @@ async function ensureStorageReady(): Promise<void> {
 }
 
 async function saveToDb(record: any): Promise<void> {
-  if (!config.saveDb) return;
   await ensureStorageReady();
 
   if (effectiveStorage === 'level' && levelDb) {
@@ -369,7 +364,6 @@ async function saveToDb(record: any): Promise<void> {
 }
 
 async function readFromDb(id: string): Promise<any> {
-  if (!config.saveDb) return null;
   await ensureStorageReady();
 
   if (effectiveStorage === 'level' && levelDb) {
@@ -510,7 +504,7 @@ function patchWindow(win: BrowserWindow): void {
               const already = recalledCache.find(x => x.id === recallId);
               if (cached && !already) {
                 recalledCache.push(cached);
-                if (config.saveDb) await saveToDb(cached);
+                await saveToDb(cached);
               }
 
               await imageDownloader.downloadPic(cached?.msg);
@@ -571,7 +565,7 @@ function registerIpcHandlers(): void {
   ipcMain.handle('LiteLoader.anti_recall.getNowConfig', async () => config);
 
   ipcMain.handle('LiteLoader.anti_recall.getStorageStatus', async (): Promise<StorageStatus> => {
-    if (config.saveDb && config.dbStorageType === 'ldb') await ensureStorageReady();
+    if (config.dbStorageType === 'ldb') await ensureStorageReady();
     return {
       effective: effectiveStorage,
       requested: config.dbStorageType,
@@ -628,7 +622,6 @@ function registerIpcHandlers(): void {
 }
 
 async function initStorageIfNeeded(): Promise<void> {
-  if (!config.saveDb) return;
   await ensureStorageReady();
 }
 

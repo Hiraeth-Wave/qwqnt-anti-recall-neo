@@ -3,7 +3,6 @@ type EffectiveStorage = 'json' | 'level';
 
 interface AntiRecallConfig {
   mainColor: string;
-  saveDb: boolean;
   dbStorageType: DbStorageType;
   saveImagesToDataDir: boolean;
   enableShadow: boolean;
@@ -24,7 +23,6 @@ const packageJson = {
 
 const DEFAULT_CONFIG: AntiRecallConfig = {
   mainColor: '#ff6d6d',
-  saveDb: false,
   dbStorageType: 'json',
   saveImagesToDataDir: false,
   enableShadow: true,
@@ -92,20 +90,10 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
                 <button id="clearDb" class="q-button q-button--small q-button--secondary">清空已储存的撤回消息</button>
               </setting-item>
 
-              <setting-item data-direction="row">
-                <div style="width:90%;">
-                  <setting-text>是否将撤回消息存入数据库</setting-text>
-                  <span class="secondary-text">数据库永久增量保存；若不开启，重启 QQ 后撤回消息会丢失。</span>
-                </div>
-                <div id="switchSaveDb" class="q-switch">
-                  <span class="q-switch__handle"></span>
-                </div>
-              </setting-item>
-
-              <setting-item id="dbStorageTypeRow" data-direction="row" class="hidden">
+              <setting-item id="dbStorageTypeRow" data-direction="row">
                 <div style="width:90%;">
                   <setting-text>存储格式</setting-text>
-                  <span class="secondary-text">JSON 为明文，LevelDB 为二进制格式（需重启 QQ 后生效）。</span>
+                  <span class="secondary-text">JSON 为明文，LevelDB 为二进制格式（需重启 QQ 后生效）。撤回消息会持续持久化保存。</span>
                   <div id="storageStatus" class="secondary-text" style="margin-top:6px;color:var(--text_tertiary);"></div>
                 </div>
                 <select id="dbStorageTypeSelect" class="q-button q-button--small q-button--secondary" style="min-width:120px;">
@@ -146,8 +134,8 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
 
               <div class="vertical-list-item">
                 <div style="width:90%;">
-                  <h2>启用定期清理</h2>
-                  <span class="secondary-text">关闭后，内存中的消息缓存将永久保留（不自动清理），可能导致内存占用持续增长；开启时，可配置下方两项。</span>
+                  <h2>自动清理消息数据缓存</h2>
+                  <span class="secondary-text">关闭后，内存中的消息缓存将永久保留直至 QQ 重启，可能导致内存占用持续增长；开启时可配置下方两项。</span>
                 </div>
                 <div id="switchPeriodicCleanup" class="q-switch">
                   <span class="q-switch__handle"></span>
@@ -157,8 +145,8 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
               <div id="periodicCleanupSub" class="periodic-cleanup-sub">
                 <setting-item data-direction="row">
                   <div>
-                    <h2>内存中消息最多缓存条数</h2>
-                    <span class="secondary-text">修改将自动保存并立即生效；如果过少可能导致消息接受太快时来不及反撤回，如果过多可能导致内存占用过高。</span>
+                    <h2>消息最多缓存条数</h2>
+                    <span class="secondary-text">修改将自动保存并立即生效；如果过少可能导致消息接收太多太快时来不及反撤回，如果过多可能导致内存占用过高。</span>
                   </div>
                   <div style="width:30%;pointer-events: auto;margin-left:10px;">
                     <input id="maxMsgLimit" min="1" max="99999999" maxlength="8" class="text_color path-input" style="width:65%;" type="number" value="${currentConfig.maxMsgSaveLimit ?? 10_000}"/>条
@@ -167,7 +155,7 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
 
                 <setting-item data-direction="row">
                   <div>
-                    <h2>清理内存缓存消息时一次性清理多少</h2>
+                    <h2>清理缓存消息时一次性清理条数</h2>
                     <span class="secondary-text">修改将自动保存并立即生效；一次性清理过多可能导致某些消息反撤回失败，过少则可能导致内存增长过快。</span>
                   </div>
                   <div style="width:30%;pointer-events: auto;margin-left:10px;">
@@ -274,31 +262,19 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
     });
   }
 
-  const switchSaveDb = menu.querySelector<HTMLElement>('#switchSaveDb');
   const storageRow = menu.querySelector<HTMLElement>('#dbStorageTypeRow');
   const storageSelect = menu.querySelector<HTMLSelectElement>('#dbStorageTypeSelect');
 
-  if (switchSaveDb && storageRow && storageSelect) {
-    setSwitchActive(switchSaveDb, currentConfig.saveDb === true);
-    storageRow.classList.toggle('hidden', !currentConfig.saveDb);
+  if (storageRow && storageSelect) {
+    storageRow.classList.remove('hidden');
     storageSelect.value = currentConfig.dbStorageType === 'ldb' ? 'ldb' : 'json';
-
-    switchSaveDb.addEventListener('click', async () => {
-      const next = !switchSaveDb.classList.contains('is-active');
-      setSwitchActive(switchSaveDb, next);
-      currentConfig.saveDb = next;
-      storageRow.classList.toggle('hidden', !next);
-      await window.anti_recall.saveConfig(currentConfig);
-      if (next) await refreshStorageStatus(menu);
-    });
+    await refreshStorageStatus(menu);
 
     storageSelect.addEventListener('change', async () => {
       currentConfig.dbStorageType = storageSelect.value === 'ldb' ? 'ldb' : 'json';
       await window.anti_recall.saveConfig(currentConfig);
       await refreshStorageStatus(menu);
     });
-
-    if (currentConfig.saveDb) await refreshStorageStatus(menu);
   }
 
   const switchSaveImages = menu.querySelector<HTMLElement>('#switchSaveImages');
