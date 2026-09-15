@@ -407,12 +407,12 @@ async function refreshStorageStatus(menu: Element): Promise<void> {
 async function applyCssFromConfig(): Promise<void> {
   currentConfig = await getNowConfig();
 
-  const old = document.querySelector<HTMLStyleElement>('#anti-recall-css');
+  const old = document.querySelector<HTMLStyleElement>('#anti-recall-neo-css');
   old?.remove();
 
   const style = document.createElement('style');
   style.type = 'text/css';
-  style.id = 'anti-recall-css';
+  style.id = 'anti-recall-neo-css';
 
   let css = `
     .message-content__wrapper {

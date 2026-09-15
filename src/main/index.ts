@@ -219,13 +219,13 @@ class ImageDownloader {
   }
 
   private output(...args: unknown[]): void {
-    console.log('\x1B[32m%s\x1B[0m', 'Anti-Recall:', ...args);
+    console.log('\x1B[32m%s\x1B[0m', 'Anti-Recall-Neo:', ...args);
   }
 }
 
 console.log('%c[Anti-Recall-Neo]', 'background:#ffdc00;color:#000000D9;padding:2px 4px;border-radius:4px;', 'Main loaded');
 
-const PLUGIN_ID = 'qwqnt-anti-recall';
+const PLUGIN_ID = 'qwqnt-anti-recall-neo';
 
 function getConfigDir(): string {
   const configs = (globalThis as any)?.qwqnt?.framework?.paths?.configs as string | undefined;
@@ -549,9 +549,8 @@ function patchWindow(win: BrowserWindow): void {
       }
     } catch (e) {
       log(
-        'NTQQ Anti-Recall Error: ',
+        '[Anti-Recall-Neo] Error: ',
         e,
-        'Please report this to https://github.com/xh321/LiteLoaderQQNT-Anti-Recall/issues, thank you',
       );
     }
 
@@ -561,11 +560,11 @@ function patchWindow(win: BrowserWindow): void {
   if (wc.__qqntim_original_object) wc.__qqntim_original_object.send = wrappedSend;
   else wc.send = wrappedSend;
 
-  log('NTQQ Anti-Recall patched for window:', win.id);
+  log('[Anti-Recall-Neo] patched for window:', win.id);
 }
 
 function log(...args: unknown[]): void {
-  console.log('\x1B[32m%s\x1B[0m', 'Anti-Recall:', ...args);
+  console.log('\x1B[32m%s\x1B[0m', 'Anti-Recall-Neo:', ...args);
 }
 
 function registerIpcHandlers(): void {
