@@ -12,6 +12,7 @@ interface AntiRecallConfig {
   enablePeriodicCleanup: boolean;
   maxMsgSaveLimit: number;
   deleteMsgCountPerTime: number;
+  rkeyServerUrl: string;
 }
 
 const packageJson = {
@@ -32,6 +33,7 @@ const DEFAULT_CONFIG: AntiRecallConfig = {
   enablePeriodicCleanup: true,
   maxMsgSaveLimit: 10_000,
   deleteMsgCountPerTime: 500,
+  rkeyServerUrl: 'https://llob.linyuchen.net/rkey',
 };
 
 let recalledIds: string[] = [];
@@ -119,6 +121,16 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
                 </div>
                 <div id="switchSaveImages" class="q-switch">
                   <span class="q-switch__handle"></span>
+                </div>
+              </setting-item>
+
+              <setting-item data-direction="row">
+                <div style="width:90%;">
+                  <setting-text>Rkey 服务器地址</setting-text>
+                  <span class="secondary-text">内置服务器失效时可填写自建或其他可用地址，留空则使用默认地址。</span>
+                </div>
+                <div style="width:40%;pointer-events: auto;margin-left:10px;">
+                  <input id="rkeyServerUrl" class="text_color path-input" type="text" value="${currentConfig.rkeyServerUrl ?? ''}"/>
                 </div>
               </setting-item>
 
@@ -299,6 +311,14 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
       await window.anti_recall.saveConfig(currentConfig);
     });
   }
+
+  const rkeyInput = menu.querySelector<HTMLInputElement>('#rkeyServerUrl');
+  rkeyInput?.addEventListener('blur', async () => {
+    const v = rkeyInput.value.trim();
+    currentConfig.rkeyServerUrl = v || DEFAULT_CONFIG.rkeyServerUrl;
+    rkeyInput.value = currentConfig.rkeyServerUrl;
+    await window.anti_recall.saveConfig(currentConfig);
+  });
 
   const switchPeriodic = menu.querySelector<HTMLElement>('#switchPeriodicCleanup');
   const periodicSub = menu.querySelector<HTMLElement>('#periodicCleanupSub');

@@ -18,6 +18,8 @@ interface AntiRecallConfig {
   enablePeriodicCleanup: boolean;
   maxMsgSaveLimit: number;
   deleteMsgCountPerTime: number;
+  /** 补全撤回图片链接使用的 Rkey 服务器地址，内置服务器失效时可自定义 */
+  rkeyServerUrl: string;
 }
 
 interface StorageStatus {
@@ -38,6 +40,13 @@ class RKeyManager {
 
   constructor(serverUrl: string) {
     this.serverUrl = serverUrl;
+  }
+
+  /** 动态切换服务器地址；地址变化时清空缓存以便下次重新拉取 */
+  setServerUrl(serverUrl: string): void {
+    if (!serverUrl || serverUrl === this.serverUrl) return;
+    this.serverUrl = serverUrl;
+    this.rkeyData = { group_rkey: '', private_rkey: '', expired_time: 0 };
   }
 
   async getRkey(): Promise<RKeyData> {
@@ -68,13 +77,19 @@ class RKeyManager {
 
 const LEGACY_IMAGE_ORIGIN = 'https://gchat.qpic.cn';
 const NT_IMAGE_ORIGIN = 'https://multimedia.nt.qq.com.cn';
+/** 默认 Rkey 服务器地址（内置，可能失效），可在设置中替换为自建地址 */
+const DEFAULT_RKEY_SERVER_URL = 'https://llob.linyuchen.net/rkey';
 
 class ImageDownloader {
-  private rkeyManager = new RKeyManager('https://llob.linyuchen.net/rkey');
+  private rkeyManager = new RKeyManager(DEFAULT_RKEY_SERVER_URL);
   private saveToDataDir: string | null = null;
 
   constructor(opts?: { saveToDataDir?: string }) {
     if (opts?.saveToDataDir) this.saveToDataDir = path.join(opts.saveToDataDir, 'images');
+  }
+
+  setRkeyServerUrl(url: string): void {
+    this.rkeyManager.setServerUrl(url || DEFAULT_RKEY_SERVER_URL);
   }
 
   setSaveToDataDir(dataDir: string | null): void {
@@ -244,6 +259,7 @@ const DEFAULT_CONFIG: AntiRecallConfig = {
   enablePeriodicCleanup: true,
   maxMsgSaveLimit: 10_000,
   deleteMsgCountPerTime: 500,
+  rkeyServerUrl: DEFAULT_RKEY_SERVER_URL,
 };
 
 let config: AntiRecallConfig = { ...DEFAULT_CONFIG };
@@ -353,7 +369,7 @@ async function saveToDb(record: any): Promise<void> {
   }
 }
 
-async function readFromDb(id: string): Promise<any | null> {
+async function readFromDb(id: string): Promise<any> {
   if (!config.saveDb) return null;
   await ensureStorageReady();
 
@@ -571,6 +587,7 @@ function registerIpcHandlers(): void {
 
     if (newConfig.dbStorageType !== 'ldb' && prevStorage === 'ldb') closeLevelDb();
     updateImageSaveDir();
+    imageDownloader.setRkeyServerUrl(newConfig.rkeyServerUrl);
     broadcast('LiteLoader.anti_recall.mainWindow.repatchCss');
 
     fs.writeFileSync(configPath, JSON.stringify(newConfig, null, 2), 'utf-8');
@@ -632,10 +649,12 @@ async function init(): Promise<void> {
   if (config.enablePeriodicCleanup == null) config.enablePeriodicCleanup = true;
   if (config.maxMsgSaveLimit == null) config.maxMsgSaveLimit = 10_000;
   if (config.deleteMsgCountPerTime == null) config.deleteMsgCountPerTime = 500;
+  if (config.rkeyServerUrl == null || !config.rkeyServerUrl.trim()) config.rkeyServerUrl = DEFAULT_RKEY_SERVER_URL;
 
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
 
   updateImageSaveDir();
+  imageDownloader.setRkeyServerUrl(config.rkeyServerUrl);
   registerIpcHandlers();
   await initStorageIfNeeded();
 
