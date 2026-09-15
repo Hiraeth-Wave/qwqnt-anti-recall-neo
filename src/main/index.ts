@@ -18,7 +18,6 @@ interface AntiRecallConfig {
   enablePeriodicCleanup: boolean;
   maxMsgSaveLimit: number;
   deleteMsgCountPerTime: number;
-  /** 补全撤回图片链接使用的 Rkey 服务器地址，内置服务器失效时可自定义 */
   rkeyServerUrl: string;
 }
 
@@ -224,7 +223,7 @@ class ImageDownloader {
   }
 }
 
-console.log('%c[Anti-Recall]', 'background:#ffdc00;color:#000000D9;padding:2px 4px;border-radius:4px;', 'Main loaded');
+console.log('%c[Anti-Recall-Neo]', 'background:#ffdc00;color:#000000D9;padding:2px 4px;border-radius:4px;', 'Main loaded');
 
 const PLUGIN_ID = 'qwqnt-anti-recall';
 

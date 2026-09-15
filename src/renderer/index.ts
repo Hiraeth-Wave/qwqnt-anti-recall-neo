@@ -16,9 +16,9 @@ interface AntiRecallConfig {
 }
 
 const packageJson = {
-  name: 'qwqnt-anti-recall',
+  name: 'qwqnt-anti-recall-neo',
   qwqnt: {
-    name: '防撤回（Anti-Recall）',
+    name: '防撤回',
   },
 } satisfies IQwQNTPlugin;
 
@@ -70,7 +70,7 @@ async function registerSettingsPage(): Promise<void> {
     const view = await PluginSettings.renderer.registerPluginSettings(packageJson);
     await renderSettings(view);
   } catch (e) {
-    console.error('[Anti-Recall] 注册设置页失败:', e);
+    console.error('[Anti-Recall-Neo] 注册设置页失败:', e);
   }
 }
 
@@ -126,7 +126,7 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
 
               <setting-item data-direction="row">
                 <div style="width:90%;">
-                  <setting-text>Rkey 服务器地址</setting-text>
+                  <setting-text>rkey 服务器地址</setting-text>
                   <span class="secondary-text">内置服务器失效时可填写自建或其他可用地址，留空则使用默认地址。</span>
                 </div>
                 <div style="width:40%;pointer-events: auto;margin-left:10px;">
@@ -485,7 +485,7 @@ async function setupMainWindowPatches(): Promise<void> {
   });
 
   window.anti_recall.recallTip((_evt, msgId) => {
-    console.log('[Anti-Recall]', '尝试反撤回消息ID', msgId);
+    console.log('[Anti-Recall-Neo]', '尝试反撤回消息ID', msgId);
     void markRecalledById(String(msgId));
   });
 
@@ -515,7 +515,7 @@ async function setupMainWindowPatches(): Promise<void> {
     const msgList = document.querySelector('.ml-list.list');
     if (!msgList) return;
     clearInterval(timer);
-    console.log('[Anti-Recall]', '检测到聊天区域，已在当前页面加载反撤回');
+    console.log('[Anti-Recall-Neo]', '检测到聊天区域，已在当前页面加载反撤回');
     observer.observe(msgList, { childList: true, subtree: true });
   }, 100);
 }
@@ -556,7 +556,7 @@ async function markRecalledInView(): Promise<void> {
         if (fallback) await markRecalled(fallback);
       }
     } catch (e) {
-      console.log('[Anti-Recall]', '反撤回消息时出错', e);
+      console.log('[Anti-Recall-Neo]', '反撤回消息时出错', e);
     }
   }
 }
