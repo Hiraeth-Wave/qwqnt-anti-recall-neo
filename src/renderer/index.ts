@@ -4,7 +4,6 @@ type EffectiveStorage = 'json' | 'level';
 interface AntiRecallConfig {
   mainColor: string;
   dbStorageType: DbStorageType;
-  saveImagesToDataDir: boolean;
   enableShadow: boolean;
   enableTip: boolean;
   isAntiRecallSelfMsg: boolean;
@@ -24,7 +23,6 @@ const packageJson = {
 const DEFAULT_CONFIG: AntiRecallConfig = {
   mainColor: '#ff6d6d',
   dbStorageType: 'json',
-  saveImagesToDataDir: false,
   enableShadow: true,
   enableTip: true,
   isAntiRecallSelfMsg: false,
@@ -73,7 +71,8 @@ async function registerSettingsPage(): Promise<void> {
 }
 
 function setSwitchActive(el: HTMLElement, active: boolean): void {
-  el.classList.toggle('is-active', active);
+  // hako 的 setting-switch 通过 is-active 属性切换状态（:host([is-active])）
+  el.toggleAttribute('is-active', active);
 }
 
 async function renderSettings(container: HTMLDivElement): Promise<void> {
@@ -87,79 +86,71 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
             <setting-list data-direction="column">
               <setting-item data-direction="row">
                 <setting-text>操作</setting-text>
-                <button id="clearDb" class="q-button q-button--small q-button--secondary">清空已储存的撤回消息</button>
-              </setting-item>
-
-              <setting-item id="dbStorageTypeRow" data-direction="row">
-                <div style="width:90%;">
-                  <setting-text>存储格式</setting-text>
-                  <span class="secondary-text">JSON 为明文，LevelDB 为二进制格式（需重启 QQ 后生效）。撤回消息会持续持久化保存。</span>
-                  <div id="storageStatus" class="secondary-text" style="margin-top:6px;color:var(--text_tertiary);"></div>
-                </div>
-                <select id="dbStorageTypeSelect" class="q-button q-button--small q-button--secondary" style="min-width:120px;">
-                  <option value="json">JSON（明文）</option>
-                  <option value="ldb">LevelDB（二进制）</option>
-                </select>
+                <setting-button id="clearDb" data-type="secondary">清空已储存的撤回消息</setting-button>
               </setting-item>
 
               <setting-item data-direction="row">
-                <div style="width:90%;">
-                  <setting-text>是否将撤回图片保存到数据目录</setting-text>
-                  <span class="secondary-text">开启后，撤回消息中的图片会额外复制到数据目录的 images 子文件夹。</span>
-                </div>
-                <div id="switchSaveImages" class="q-switch">
-                  <span class="q-switch__handle"></span>
-                </div>
-              </setting-item>
-
-              <setting-item data-direction="row">
-                <div style="width:90%;">
+                <div>
                   <setting-text>rkey 服务器地址</setting-text>
                   <span class="secondary-text">内置服务器失效时可填写自建或其他可用地址，留空则使用默认地址。</span>
                 </div>
-                <div style="width:40%;pointer-events: auto;margin-left:10px;">
-                  <input id="rkeyServerUrl" class="text_color path-input" type="text" value="${currentConfig.rkeyServerUrl ?? ''}"/>
+                <input id="rkeyServerUrl" class="text_color path-input rkey-input" type="text" value="${currentConfig.rkeyServerUrl ?? ''}"/>
+              </setting-item>
+            </setting-list>
+          </setting-panel>
+        </setting-section>
+
+        <setting-section data-title="数据配置">
+          <setting-panel>
+            <setting-list data-direction="column">
+              <setting-item id="dbStorageTypeRow" data-direction="row">
+                <div>
+                  <setting-text>存储格式</setting-text>
+                  <span class="secondary-text">JSON 为明文，LevelDB 为二进制格式，更改后需重启 QQ 后生效。</span>
+                  <span id="storageStatus" class="secondary-text" style="margin-top:6px;color:var(--text_tertiary);"></span>
                 </div>
+                <setting-select id="dbStorageTypeSelect">
+                  <setting-option data-value="json">JSON</setting-option>
+                  <setting-option data-value="ldb">LevelDB</setting-option>
+                </setting-select>
               </setting-item>
 
-              <div class="vertical-list-item">
-                <div style="width:90%;">
-                  <h2>是否反撤回自己的消息</h2>
+              <setting-item data-direction="row">
+                <div>
+                  <setting-text>是否反撤回自己的消息</setting-text>
                   <span class="secondary-text">如果开启，则自己发送的消息也会被反撤回。开启后，从下一条消息开始起生效。</span>
                 </div>
-                <div id="switchAntiRecallSelf" class="q-switch">
-                  <span class="q-switch__handle"></span>
-                </div>
-              </div>
+                <setting-switch id="switchAntiRecallSelf"></setting-switch>
+              </setting-item>
 
-              <div class="vertical-list-item">
-                <div style="width:90%;">
-                  <h2>自动清理消息数据缓存</h2>
+              <setting-item data-direction="row">
+                <div>
+                  <setting-text>自动清理消息数据缓存</setting-text>
                   <span class="secondary-text">关闭后，内存中的消息缓存将永久保留直至 QQ 重启，可能导致内存占用持续增长；开启时可配置下方两项。</span>
                 </div>
-                <div id="switchPeriodicCleanup" class="q-switch">
-                  <span class="q-switch__handle"></span>
-                </div>
-              </div>
+                <setting-switch id="switchPeriodicCleanup"></setting-switch>
+              </setting-item>
 
-              <div id="periodicCleanupSub" class="periodic-cleanup-sub">
+              <div id="periodicCleanupSub">
                 <setting-item data-direction="row">
                   <div>
-                    <h2>消息最多缓存条数</h2>
+                    <setting-text>消息最多缓存条数</setting-text>
                     <span class="secondary-text">修改将自动保存并立即生效；如果过少可能导致消息接收太多太快时来不及反撤回，如果过多可能导致内存占用过高。</span>
                   </div>
-                  <div style="width:30%;pointer-events: auto;margin-left:10px;">
-                    <input id="maxMsgLimit" min="1" max="99999999" maxlength="8" class="text_color path-input" style="width:65%;" type="number" value="${currentConfig.maxMsgSaveLimit ?? 10_000}"/>条
+                  <div class="input-with-suffix">
+                    <input id="maxMsgLimit" min="1" max="99999999" maxlength="8" class="text_color path-input number-input" type="number" value="${currentConfig.maxMsgSaveLimit ?? 10_000}"/>
+                    <span>条</span>
                   </div>
                 </setting-item>
 
                 <setting-item data-direction="row">
                   <div>
-                    <h2>清理缓存消息时一次性清理条数</h2>
+                    <setting-text>清理缓存消息时一次性清理条数</setting-text>
                     <span class="secondary-text">修改将自动保存并立即生效；一次性清理过多可能导致某些消息反撤回失败，过少则可能导致内存增长过快。</span>
                   </div>
-                  <div style="width:30%;pointer-events: auto;margin-left:10px;">
-                    <input id="deletePerTime" min="1" max="99999" maxlength="5" class="text_color path-input" style="width:65%; margin-left: 3px" type="number" value="${currentConfig.deleteMsgCountPerTime ?? 500}"/>条
+                  <div class="input-with-suffix">
+                    <input id="deletePerTime" min="1" max="99999" maxlength="5" class="text_color path-input number-input" type="number" value="${currentConfig.deleteMsgCountPerTime ?? 500}"/>
+                    <span>条</span>
                   </div>
                 </setting-item>
               </div>
@@ -172,52 +163,52 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
             <setting-list data-direction="column">
               <setting-item data-direction="row">
                 <div>
-                  <h2>撤回主题色</h2>
+                  <setting-text>撤回主题色</setting-text>
                   <span class="secondary-text">将会同时影响阴影和“已撤回”提示的颜色</span>
                 </div>
-                <div>
-                  <input type="color" value="${currentConfig.mainColor}" class="q-button q-button--small q-button--secondary pick-color" />
-                </div>
+                <input id="mainColor" type="color" class="pick-color" value="${currentConfig.mainColor}"/>
               </setting-item>
 
-              <hr class="horizontal-dividing-line" />
-
-              <div class="vertical-list-item">
+              <setting-item data-direction="row">
                 <div>
-                  <h2>撤回后消息是否显示阴影</h2>
+                  <setting-text>撤回后消息是否显示阴影</setting-text>
                   <span class="secondary-text">修改将自动保存并实时生效</span>
                 </div>
-                <div id="switchShadow" class="q-switch">
-                  <span class="q-switch__handle"></span>
-                </div>
-              </div>
+                <setting-switch id="switchShadow"></setting-switch>
+              </setting-item>
 
-              <hr class="horizontal-dividing-line" />
-
-              <div class="vertical-list-item">
+              <setting-item data-direction="row">
                 <div>
-                  <h2>撤回后消息下方是否显示“已撤回”提示</h2>
+                  <setting-text>撤回后消息下方是否显示“已撤回”提示</setting-text>
                   <span class="secondary-text">修改将自动保存并在重新滚动消息后生效</span>
                 </div>
-                <div id="switchTip" class="q-switch">
-                  <span class="q-switch__handle"></span>
-                </div>
-              </div>
+                <setting-switch id="switchTip"></setting-switch>
+              </setting-item>
             </setting-list>
           </setting-panel>
         </setting-section>
 
         <style>
-          .path-input { align-self: normal; flex: 1; border-radius: 4px; margin-right: 16px; transition: all 100ms ease-out; border: 1px solid #464646; }
-          .path-input:focus { padding-left: 4px; }
           .config_view { margin: 20px; }
-          .config_view .vertical-list-item { margin: 12px 0px; display: flex; justify-content: space-between; align-items: center; }
-          .config_view .horizontal-dividing-line { border: unset; margin: unset; height: 1px; background-color: rgba(127, 127, 127, 0.15); }
+          .config_view .secondary-text { display: block; color: var(--text_secondary); font-size: min(var(--font_size_2), 16px); line-height: min(var(--line_height_2), 22px); margin-top: 4px; }
           .config_view .hidden { display: none !important; }
-          .config_view .periodic-cleanup-sub.hidden { display: none !important; }
-          .config_view .secondary-text { color: var(--text_secondary); font-size: min(var(--font_size_2), 16px); line-height: min(var(--line_height_2), 22px); margin-top: 4px; }
-          @media (prefers-color-scheme: light) { .text_color { color: black; } }
-          @media (prefers-color-scheme: dark) { .text_color { color: white; } }
+          .config_view #periodicCleanupSub.hidden { display: none !important; }
+          .config_view .path-input { height: 24px; border-radius: 4px; padding: 0px 6px; background-color: var(--overlay_active); transition: background-color 100ms ease-out; }
+          .config_view .path-input:hover { background-color: var(--overlay_hover); }
+          .config_view .rkey-input { width: 300px; }
+          .config_view .number-input { width: 88px; }
+          .config_view .input-with-suffix { display: flex; align-items: center; gap: 6px; color: var(--text_secondary); }
+          .config_view .pick-color { width: 62px; height: 24px; padding: 0px; border-radius: 4px; border: 1px solid var(--border_dark); background: transparent; cursor: pointer; }
+          .config_view .pick-color::-webkit-color-swatch-wrapper { padding: 2px; }
+          .config_view .pick-color::-webkit-color-swatch { border: none; border-radius: 2px; }
+          .config_view #dbStorageTypeSelect::after {
+            content: ''; position: absolute; right: 9px; top: 50%; transform: translateY(-50%);
+            width: 16px; height: 16px; pointer-events: none; background-color: var(--icon_primary);
+            -webkit-mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M12 6L8 10L4 6' stroke='black' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 16px no-repeat;
+            mask: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><path d='M12 6L8 10L4 6' stroke='black' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/></svg>") center / 16px no-repeat;
+          }
+          @media (prefers-color-scheme: light) { .config_view .text_color { color: black; } }
+          @media (prefers-color-scheme: dark) { .config_view .text_color { color: white; } }
         </style>
       </setting-item>
     </plugin-menu>
@@ -226,7 +217,7 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
   const menu = new DOMParser().parseFromString(html, 'text/html').querySelector('plugin-menu');
   if (!menu) return;
 
-  const clearBtn = menu.querySelector<HTMLButtonElement>('#clearDb');
+  const clearBtn = menu.querySelector<HTMLElement>('#clearDb');
   clearBtn?.addEventListener('click', async () => {
     await window.anti_recall.clearDb();
   });
@@ -263,28 +254,22 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
   }
 
   const storageRow = menu.querySelector<HTMLElement>('#dbStorageTypeRow');
-  const storageSelect = menu.querySelector<HTMLSelectElement>('#dbStorageTypeSelect');
+  const storageSelect = menu.querySelector<HTMLElement>('#dbStorageTypeSelect');
 
   if (storageRow && storageSelect) {
     storageRow.classList.remove('hidden');
-    storageSelect.value = currentConfig.dbStorageType === 'ldb' ? 'ldb' : 'json';
+    // 注意：DOMParser 解析出的自定义元素在 appendChild 前不会升级，只能操作属性，不能调用组件方法
+    const current = currentConfig.dbStorageType === 'ldb' ? 'ldb' : 'json';
+    menu.querySelectorAll<HTMLElement>('#dbStorageTypeSelect setting-option').forEach(o => {
+      o.toggleAttribute('is-selected', o.getAttribute('data-value') === current);
+    });
     await refreshStorageStatus(menu);
 
-    storageSelect.addEventListener('change', async () => {
-      currentConfig.dbStorageType = storageSelect.value === 'ldb' ? 'ldb' : 'json';
+    storageSelect.addEventListener('selected', async e => {
+      const value = (e as CustomEvent<{ name: string; value: string }>).detail?.value;
+      currentConfig.dbStorageType = value === 'ldb' ? 'ldb' : 'json';
       await window.anti_recall.saveConfig(currentConfig);
       await refreshStorageStatus(menu);
-    });
-  }
-
-  const switchSaveImages = menu.querySelector<HTMLElement>('#switchSaveImages');
-  if (switchSaveImages) {
-    setSwitchActive(switchSaveImages, currentConfig.saveImagesToDataDir === true);
-    switchSaveImages.addEventListener('click', async () => {
-      const next = !switchSaveImages.classList.contains('is-active');
-      setSwitchActive(switchSaveImages, next);
-      currentConfig.saveImagesToDataDir = next;
-      await window.anti_recall.saveConfig(currentConfig);
     });
   }
 
@@ -302,7 +287,7 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
     setSwitchActive(switchPeriodic, currentConfig.enablePeriodicCleanup !== false);
     periodicSub.classList.toggle('hidden', currentConfig.enablePeriodicCleanup === false);
     switchPeriodic.addEventListener('click', async () => {
-      const next = !switchPeriodic.classList.contains('is-active');
+      const next = !switchPeriodic.hasAttribute('is-active');
       setSwitchActive(switchPeriodic, next);
       currentConfig.enablePeriodicCleanup = next;
       periodicSub.classList.toggle('hidden', !next);
@@ -314,7 +299,7 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
   if (switchAntiSelf) {
     setSwitchActive(switchAntiSelf, currentConfig.isAntiRecallSelfMsg === true);
     switchAntiSelf.addEventListener('click', async () => {
-      const next = !switchAntiSelf.classList.contains('is-active');
+      const next = !switchAntiSelf.hasAttribute('is-active');
       setSwitchActive(switchAntiSelf, next);
       currentConfig.isAntiRecallSelfMsg = next;
       await window.anti_recall.saveConfig(currentConfig);
@@ -325,7 +310,7 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
   if (switchShadow) {
     setSwitchActive(switchShadow, currentConfig.enableShadow !== false);
     switchShadow.addEventListener('click', async () => {
-      const next = !switchShadow.classList.contains('is-active');
+      const next = !switchShadow.hasAttribute('is-active');
       setSwitchActive(switchShadow, next);
       currentConfig.enableShadow = next;
       await window.anti_recall.saveConfig(currentConfig);
@@ -336,7 +321,7 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
   if (switchTip) {
     setSwitchActive(switchTip, currentConfig.enableTip !== false);
     switchTip.addEventListener('click', async () => {
-      const next = !switchTip.classList.contains('is-active');
+      const next = !switchTip.hasAttribute('is-active');
       setSwitchActive(switchTip, next);
       currentConfig.enableTip = next;
       await window.anti_recall.saveConfig(currentConfig);

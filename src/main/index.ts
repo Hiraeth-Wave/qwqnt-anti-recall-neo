@@ -10,7 +10,6 @@ type EffectiveStorage = 'json' | 'level';
 interface AntiRecallConfig {
   mainColor: string;
   dbStorageType: DbStorageType;
-  saveImagesToDataDir: boolean;
   enableShadow: boolean;
   enableTip: boolean;
   isAntiRecallSelfMsg: boolean;
@@ -80,18 +79,9 @@ const DEFAULT_RKEY_SERVER_URL = 'https://llob.linyuchen.net/rkey';
 
 class ImageDownloader {
   private rkeyManager = new RKeyManager(DEFAULT_RKEY_SERVER_URL);
-  private saveToDataDir: string | null = null;
-
-  constructor(opts?: { saveToDataDir?: string }) {
-    if (opts?.saveToDataDir) this.saveToDataDir = path.join(opts.saveToDataDir, 'images');
-  }
 
   setRkeyServerUrl(url: string): void {
     this.rkeyManager.setServerUrl(url || DEFAULT_RKEY_SERVER_URL);
-  }
-
-  setSaveToDataDir(dataDir: string | null): void {
-    this.saveToDataDir = dataDir ? path.join(dataDir, 'images') : null;
   }
 
   async getImageUrl(picElement: any): Promise<string> {
@@ -159,34 +149,14 @@ class ImageDownloader {
         } catch {
           fs.mkdirSync(path.dirname(sourcePath), { recursive: true });
           fs.writeFileSync(sourcePath, data);
-          await this.copyToDataDir(data, msgIdStr, sourcePath, idx);
         }
       } else {
         this.output('Pic already existed, skip.', sourcePath);
-        if (this.saveToDataDir) {
-          await this.copyToDataDir(fs.readFileSync(sourcePath), msgIdStr, sourcePath, idx);
-        }
       }
 
       if (pic?.thumbPath && (Array.isArray(pic.thumbPath) || pic.thumbPath instanceof Object)) {
         pic.thumbPath = thumbMap;
       }
-    }
-  }
-
-  private async copyToDataDir(data: Buffer, msgId: string, sourcePath: string, idx: number): Promise<void> {
-    if (!this.saveToDataDir) return;
-    try {
-      fs.mkdirSync(this.saveToDataDir, { recursive: true });
-      const ext = path.extname(sourcePath) || '.jpg';
-      const base = path.basename(sourcePath, ext).replace(/[^a-zA-Z0-9_-]/g, '_').slice(0, 32);
-      const out = path.join(this.saveToDataDir, `${msgId}_${idx}_${base}${ext}`);
-      if (!fs.existsSync(out)) {
-        fs.writeFileSync(out, data);
-        this.output('Saved recalled image to data dir:', out);
-      }
-    } catch (e) {
-      this.output('Failed to copy image to data dir:', e);
     }
   }
 
@@ -239,7 +209,6 @@ function getDataDir(): string {
 let configPath = '';
 const configDir = getConfigDir();
 const dataDir = getDataDir();
-const imagesDir = path.join(dataDir, 'images');
 
 const jsonDbPath = path.join(dataDir, 'qq-recalled-db.json');
 const levelDbPath = path.join(dataDir, 'qq-recalled-db.ldb');
@@ -249,7 +218,6 @@ const imageDownloader = new ImageDownloader();
 const DEFAULT_CONFIG: AntiRecallConfig = {
   mainColor: '#ff6d6d',
   dbStorageType: 'ldb',
-  saveImagesToDataDir: false,
   enableShadow: true,
   enableTip: true,
   isAntiRecallSelfMsg: false,
@@ -276,10 +244,6 @@ function readConfig(): AntiRecallConfig {
     return { ...DEFAULT_CONFIG };
   }
   return JSON.parse(fs.readFileSync(configPath, 'utf-8')) as AntiRecallConfig;
-}
-
-function updateImageSaveDir(): void {
-  imageDownloader.setSaveToDataDir(config.saveImagesToDataDir ? dataDir : null);
 }
 
 async function tryOpenLevelDb(): Promise<boolean> {
@@ -578,7 +542,6 @@ function registerIpcHandlers(): void {
     config = newConfig;
 
     if (newConfig.dbStorageType !== 'ldb' && prevStorage === 'ldb') closeLevelDb();
-    updateImageSaveDir();
     imageDownloader.setRkeyServerUrl(newConfig.rkeyServerUrl);
     broadcast('LiteLoader.anti_recall.mainWindow.repatchCss');
 
@@ -607,7 +570,6 @@ function registerIpcHandlers(): void {
 
       if (fs.existsSync(jsonDbPath)) fs.unlinkSync(jsonDbPath);
       if (fs.existsSync(levelDbPath)) fs.rmSync(levelDbPath, { recursive: true, force: true });
-      if (fs.existsSync(imagesDir)) fs.rmSync(imagesDir, { recursive: true, force: true });
     } catch {
       // ignore
     }
@@ -634,7 +596,6 @@ async function init(): Promise<void> {
 
   if (config.mainColor == null) config.mainColor = '#ff6d6d';
   if (config.dbStorageType == null) config.dbStorageType = 'json';
-  if (config.saveImagesToDataDir == null) config.saveImagesToDataDir = false;
   if (config.enableShadow == null) config.enableShadow = true;
   if (config.enableTip == null) config.enableTip = true;
   if (config.enablePeriodicCleanup == null) config.enablePeriodicCleanup = true;
@@ -644,7 +605,6 @@ async function init(): Promise<void> {
 
   fs.writeFileSync(configPath, JSON.stringify(config, null, 2), 'utf-8');
 
-  updateImageSaveDir();
   imageDownloader.setRkeyServerUrl(config.rkeyServerUrl);
   registerIpcHandlers();
   await initStorageIfNeeded();
