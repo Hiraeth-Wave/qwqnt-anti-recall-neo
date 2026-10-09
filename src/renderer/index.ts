@@ -13,13 +13,6 @@ interface AntiRecallConfig {
   rkeyServerUrl: string;
 }
 
-const packageJson = {
-  name: 'qwqnt-anti-recall-neo',
-  qwqnt: {
-    name: '防撤回',
-  },
-} satisfies IQwQNTPlugin;
-
 const DEFAULT_CONFIG: AntiRecallConfig = {
   mainColor: '#ff6d6d',
   dbStorageType: 'json',
@@ -63,7 +56,7 @@ async function getNowConfig(): Promise<AntiRecallConfig> {
 
 async function registerSettingsPage(): Promise<void> {
   try {
-    const view = await PluginSettings.renderer.registerPluginSettings(packageJson);
+    const view = await PluginSettings.renderer.registerPluginSettings(__self.meta.packageJson);
     await renderSettings(view);
   } catch (e) {
     console.error('[Anti-Recall-Neo] 注册设置页失败:', e);

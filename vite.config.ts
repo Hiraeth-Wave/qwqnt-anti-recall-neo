@@ -82,7 +82,7 @@ const configs = {
         fix: true,
       }),
       viteCp({
-        targets: [{ src: './package.json', dest: 'dist' }],
+        targets: [{ src: './package.json', dest: 'dist' }, { src: './icon.svg', dest: 'dist' }],
       }),
       viteZipPack({
         in: OUTPUT_DIR,
