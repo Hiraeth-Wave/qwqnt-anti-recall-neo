@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import http from 'node:http';
 import https from 'node:https';
-import { BrowserWindow, app, dialog, ipcMain } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 
 type DbStorageType = 'json' | 'ldb';
 type EffectiveStorage = 'json' | 'level';
@@ -17,12 +17,6 @@ interface AntiRecallConfig {
   maxMsgSaveLimit: number;
   deleteMsgCountPerTime: number;
   rkeyServerUrl: string;
-}
-
-interface StorageStatus {
-  effective: EffectiveStorage;
-  requested: DbStorageType;
-  error?: string;
 }
 
 interface RKeyData {
@@ -74,7 +68,6 @@ class RKeyManager {
 
 const LEGACY_IMAGE_ORIGIN = 'https://gchat.qpic.cn';
 const NT_IMAGE_ORIGIN = 'https://multimedia.nt.qq.com.cn';
-/** 默认 Rkey 服务器地址（内置，可能失效），可在设置中替换为自建地址 */
 const DEFAULT_RKEY_SERVER_URL = 'https://llob.linyuchen.net/rkey';
 
 class ImageDownloader {
@@ -528,15 +521,6 @@ function log(...args: unknown[]): void {
 function registerIpcHandlers(): void {
   ipcMain.handle('LiteLoader.anti_recall.getNowConfig', async () => config);
 
-  ipcMain.handle('LiteLoader.anti_recall.getStorageStatus', async (): Promise<StorageStatus> => {
-    if (config.dbStorageType === 'ldb') await ensureStorageReady();
-    return {
-      effective: effectiveStorage,
-      requested: config.dbStorageType,
-      error: levelError ?? undefined,
-    };
-  });
-
   ipcMain.handle('LiteLoader.anti_recall.saveConfig', async (_event, newConfig: AntiRecallConfig) => {
     const prevStorage = config.dbStorageType;
     config = newConfig;
@@ -585,6 +569,22 @@ function registerIpcHandlers(): void {
 
 async function initStorageIfNeeded(): Promise<void> {
   await ensureStorageReady();
+
+  if (config.dbStorageType === 'ldb' && levelError) {
+    const res = await dialog.showMessageBox({
+      type: 'error',
+      title: 'qwqnt-anti-recall-neo',
+      message: 'LevelDB 存储加载失败，已自动回退为 JSON 存储。',
+      detail: `错误信息：${levelError}\n\n该问题通常不应出现，建议携带以上信息报告 issue。`,
+      buttons: ['前往 Issue 页反馈', '确定'],
+      defaultId: 1,
+      cancelId: 1,
+    });
+
+    if (res.response === 0) {
+      void shell.openExternal('https://github.com/Hiraeth-Wave/qwqnt-anti-recall-neo/issues');
+    }
+  }
 }
 
 async function init(): Promise<void> {

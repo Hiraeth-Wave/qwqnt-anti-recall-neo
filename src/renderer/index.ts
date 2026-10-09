@@ -1,5 +1,4 @@
 type DbStorageType = 'json' | 'ldb';
-type EffectiveStorage = 'json' | 'level';
 
 interface AntiRecallConfig {
   mainColor: string;
@@ -78,14 +77,14 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
           <setting-panel>
             <setting-list data-direction="column">
               <setting-item data-direction="row">
-                <setting-text>操作</setting-text>
+                <setting-text>消息管理</setting-text>
                 <setting-button id="clearDb" data-type="secondary">清空已储存的撤回消息</setting-button>
               </setting-item>
 
               <setting-item data-direction="row">
                 <div>
                   <setting-text>rkey 服务器地址</setting-text>
-                  <span class="secondary-text">内置服务器失效时可填写自建或其他可用地址，留空则使用默认地址。</span>
+                  <span class="secondary-text">rKey 用于获取被撤回的消息图片，内置服务器失效时可填写自建或其它服务器。更改后可能需切换聊天窗口才可完全生效。</span>
                 </div>
                 <input id="rkeyServerUrl" class="text_color path-input rkey-input" type="text" value="${currentConfig.rkeyServerUrl ?? ''}"/>
               </setting-item>
@@ -99,11 +98,10 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
               <setting-item id="dbStorageTypeRow" data-direction="row">
                 <div>
                   <setting-text>存储格式</setting-text>
-                  <span class="secondary-text">JSON 为明文，LevelDB 为二进制格式，更改后需重启 QQ 后生效。</span>
-                  <span id="storageStatus" class="secondary-text" style="margin-top:6px;color:var(--text_tertiary);"></span>
+                  <span class="secondary-text">Json 方便阅读，LevelDB 性能更优。更改后需重启 QQ 生效。</span>
                 </div>
                 <setting-select id="dbStorageTypeSelect">
-                  <setting-option data-value="json">JSON</setting-option>
+                  <setting-option data-value="json">Json</setting-option>
                   <setting-option data-value="ldb">LevelDB</setting-option>
                 </setting-select>
               </setting-item>
@@ -119,7 +117,7 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
               <setting-item data-direction="row">
                 <div>
                   <setting-text>自动清理消息数据缓存</setting-text>
-                  <span class="secondary-text">关闭后，内存中的消息缓存将永久保留直至 QQ 重启，可能导致内存占用持续增长；开启时可配置下方两项。</span>
+                  <span class="secondary-text">插件会缓存消息数据用于撤回恢复并持久化。关闭后，内存中的消息将永久缓存直至 QQ 重启，可能导致内存占用持续增长；但开启可能导致旧消息无法被反撤回。</span>
                 </div>
                 <setting-switch id="switchPeriodicCleanup"></setting-switch>
               </setting-item>
@@ -128,10 +126,10 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
                 <setting-item data-direction="row">
                   <div>
                     <setting-text>消息最多缓存条数</setting-text>
-                    <span class="secondary-text">修改将自动保存并立即生效；如果过少可能导致消息接收太多太快时来不及反撤回，如果过多可能导致内存占用过高。</span>
+                    <span class="secondary-text">如果过少可能导致消息接收太多太快时来不及反撤回，如果过多可能导致内存占用过高。更改后立即生效。</span>
                   </div>
                   <div class="input-with-suffix">
-                    <input id="maxMsgLimit" min="1" max="99999999" maxlength="8" class="text_color path-input number-input" type="number" value="${currentConfig.maxMsgSaveLimit ?? 10_000}"/>
+                    <input id="maxMsgLimit" min="1" max="100000000" class="text_color path-input number-input" type="number" value="${currentConfig.maxMsgSaveLimit ?? 100000}"/>
                     <span>条</span>
                   </div>
                 </setting-item>
@@ -139,10 +137,10 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
                 <setting-item data-direction="row">
                   <div>
                     <setting-text>清理缓存消息时一次性清理条数</setting-text>
-                    <span class="secondary-text">修改将自动保存并立即生效；一次性清理过多可能导致某些消息反撤回失败，过少则可能导致内存增长过快。</span>
+                    <span class="secondary-text">当达到上一条配置的上限时将清理掉最旧消息数据（清理后将无法反撤回），一次性清理过多可能较多消息反撤回失败，过少可能会导致内存持续高占用。更改后立即生效。</span>
                   </div>
                   <div class="input-with-suffix">
-                    <input id="deletePerTime" min="1" max="99999" maxlength="5" class="text_color path-input number-input" type="number" value="${currentConfig.deleteMsgCountPerTime ?? 500}"/>
+                    <input id="deletePerTime" min="1" max="100000000" class="text_color path-input number-input" type="number" value="${currentConfig.deleteMsgCountPerTime ?? 5000}"/>
                     <span>条</span>
                   </div>
                 </setting-item>
@@ -157,23 +155,23 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
               <setting-item data-direction="row">
                 <div>
                   <setting-text>撤回主题色</setting-text>
-                  <span class="secondary-text">将会同时影响阴影和“已撤回”提示的颜色</span>
+                  <span class="secondary-text">将会同时影响阴影和“已撤回”提示的颜色。修改将立即生效。</span>
                 </div>
                 <input id="mainColor" type="color" class="pick-color" value="${currentConfig.mainColor}"/>
               </setting-item>
 
               <setting-item data-direction="row">
                 <div>
-                  <setting-text>撤回后消息是否显示阴影</setting-text>
-                  <span class="secondary-text">修改将自动保存并实时生效</span>
+                  <setting-text>撤回消息显示阴影</setting-text>
+                  <span class="secondary-text">修改将立即生效。</span>
                 </div>
                 <setting-switch id="switchShadow"></setting-switch>
               </setting-item>
 
               <setting-item data-direction="row">
                 <div>
-                  <setting-text>撤回后消息下方是否显示“已撤回”提示</setting-text>
-                  <span class="secondary-text">修改将自动保存并在重新滚动消息后生效</span>
+                  <setting-text>撤回消息显示“已撤回”提示</setting-text>
+                  <span class="secondary-text">修改将在重新滚动消息后生效。</span>
                 </div>
                 <setting-switch id="switchTip"></setting-switch>
               </setting-item>
@@ -246,23 +244,19 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
     });
   }
 
-  const storageRow = menu.querySelector<HTMLElement>('#dbStorageTypeRow');
   const storageSelect = menu.querySelector<HTMLElement>('#dbStorageTypeSelect');
 
-  if (storageRow && storageSelect) {
-    storageRow.classList.remove('hidden');
+  if (storageSelect) {
     // 注意：DOMParser 解析出的自定义元素在 appendChild 前不会升级，只能操作属性，不能调用组件方法
     const current = currentConfig.dbStorageType === 'ldb' ? 'ldb' : 'json';
     menu.querySelectorAll<HTMLElement>('#dbStorageTypeSelect setting-option').forEach(o => {
       o.toggleAttribute('is-selected', o.getAttribute('data-value') === current);
     });
-    await refreshStorageStatus(menu);
 
     storageSelect.addEventListener('selected', async e => {
       const value = (e as CustomEvent<{ name: string; value: string }>).detail?.value;
       currentConfig.dbStorageType = value === 'ldb' ? 'ldb' : 'json';
       await window.anti_recall.saveConfig(currentConfig);
-      await refreshStorageStatus(menu);
     });
   }
 
@@ -322,40 +316,6 @@ async function renderSettings(container: HTMLDivElement): Promise<void> {
   }
 
   container.appendChild(menu);
-}
-
-async function refreshStorageStatus(menu: Element): Promise<void> {
-  const statusEl = menu.querySelector<HTMLElement>('#storageStatus');
-  if (!statusEl) return;
-  if (!window.anti_recall?.getStorageStatus) {
-    statusEl.textContent = '';
-    return;
-  }
-
-  try {
-    const status = (await window.anti_recall.getStorageStatus()) as {
-      effective: EffectiveStorage;
-      requested: DbStorageType;
-      error?: string;
-    };
-
-    if (status.effective === 'level') {
-      statusEl.textContent = '当前使用：LevelDB ✓';
-      statusEl.style.color = '';
-      return;
-    }
-
-    if (status.requested === 'ldb' && status.error) {
-      statusEl.textContent = `LevelDB 不可用：${status.error}`;
-      statusEl.style.color = 'var(--red)';
-      return;
-    }
-
-    statusEl.textContent = '当前使用：JSON';
-    statusEl.style.color = '';
-  } catch {
-    statusEl.textContent = '';
-  }
 }
 
 async function applyCssFromConfig(): Promise<void> {

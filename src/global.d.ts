@@ -43,7 +43,6 @@ declare global {
     anti_recall: {
       clearDb: () => Promise<void>;
       getNowConfig: <T = unknown>() => Promise<T>;
-      getStorageStatus: () => Promise<{ effective: 'json' | 'level'; requested: 'json' | 'ldb'; error?: string }>;
       saveConfig: <T = unknown>(newConfig: T) => Promise<void>;
       repatchCss: (callback: () => void) => void;
       recallTip: (callback: (_event: unknown, msgId: string) => void) => void;
